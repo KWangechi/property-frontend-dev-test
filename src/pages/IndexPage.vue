@@ -14,13 +14,18 @@
         </template>
 
         <template #append v-if="searchTerm || searchTerm.length">
-          <q-icon name="clear" class="cursor-pointer" clickable />
+          <q-icon
+            name="clear"
+            class="cursor-pointer"
+            clickable
+            @click="clearAllFilters"
+          />
         </template>
       </q-input>
 
       <q-checkbox
         v-model="filterByCategories"
-        label="Allow additional filters"
+        label="Show more filters"
       ></q-checkbox>
 
       <q-btn
@@ -91,6 +96,7 @@
       </q-btn>
 
       <q-btn
+        v-if="Object.keys(queryParams).length"
         class="bg-grey q-ml-lg q-px-md text-white"
         label="Clear filters"
         dense
@@ -132,12 +138,12 @@
       </q-card>
     </div>
 
-    <div v-if="loading || searching" class="flex justify-center">
+    <div v-if="loading || (searching)" class="flex justify-center">
       <q-spinner-bars size="24px" class="q-mt-xl" />
     </div>
 
     <!-- No Results Found -->
-    <div v-if="!searchResults.length && !loading" class="text-center q-mt-xl">
+    <div v-else-if="!searchResults.length && !loading" class="text-center q-mt-xl">
       <q-icon name="warning" size="64px" color="grey-6" />
       <p class="text-caption text-grey-6">No properties match your search.</p>
     </div>
@@ -195,41 +201,35 @@ const placeholderImages = [
 ];
 
 const computedFilteredResuts = computed(() => {
-  const filteredResults = searchResults.value.filter((property) => {
-    // Apply filter conditions here
-    // For example, filter properties based on filterProperties values
-    // Replace the following condition with your actual filtering logic
-    return true;
-  });
-
-  return filteredResults.map((property, index) => {
+  return searchResults.value.map((property, index) => {
     property.image = placeholderImages[index % placeholderImages.length];
     return property;
   });
 });
 
-// Add image to properties if not present
 onMounted(async () => {
   await getAllProperties();
 });
 
 // Search functionality
 const searchTerm = ref("");
+let queryParams = ref({});
 
 async function search() {
-  let queryParams = {
+  searchResults.value = [];
+  queryParams.value = {
     name: searchTerm.value,
   };
 
   if (filterByCategories.value) {
     Object.keys(filterProperties.value).filter((key) => {
       if (filterProperties.value[key] !== "") {
-        queryParams[key] = filterProperties.value[key];
+        queryParams.value[key] = filterProperties.value[key];
       }
     });
   }
 
-  await searchProperties(queryParams);
+  await searchProperties(queryParams.value);
 }
 
 async function clearAllFilters() {
@@ -238,6 +238,7 @@ async function clearAllFilters() {
   });
   searchTerm.value = "";
   filterByCategories.value = false;
+  queryParams.value = {};
   await getAllProperties();
 }
 </script>

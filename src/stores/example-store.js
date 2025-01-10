@@ -6,6 +6,7 @@ export const useSearchStore = defineStore("search", {
     searchResults: [],
     loading: false,
     searching: false,
+    cache: {},
   }),
   getters: {
     getSearchResults() {
@@ -16,11 +17,24 @@ export const useSearchStore = defineStore("search", {
     async getAllProperties() {
       this.loading = true;
 
+      // implement a cache to prevent refetching from server
+      const cachedProperties = this.cache["properties"];
+      if (this.cache["properties"]) {
+        console.log("Querying the cache");
+        this.searchResults = cachedProperties;
+        this.loading = false;
+        return;
+      }
+
+      console.log("Querying from server...");
+
       try {
         const { data } = await api.get("properties");
 
         this.searchResults = data.properties;
         this.loading = false;
+
+        this.cache["properties"] = this.searchResults;
       } catch (error) {
         this.loading = false;
         console.error("Error fetching properties:", error);
@@ -42,7 +56,6 @@ export const useSearchStore = defineStore("search", {
         console.error("Error searching properties:", error);
         this.searching = false;
       }
-      // this.searchResults = ["Property 1", "Property 2", "Property 3"];
     },
   },
 });
